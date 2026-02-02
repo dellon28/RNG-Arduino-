@@ -29,15 +29,21 @@
 // DEFINE VARIABLES
 #define ARDUINOJSON_USE_DOUBLE      1 
 // DEFINE THE PINS THAT WILL BE MAPPED TO THE 7 SEG DISPLAY BELOW, 'a' to 'g'
-#define a     15
-/* Complete all others */
+#define a 15
+#define b 32
+#define c 33
+#define d 10
+#define e 26
+#define f 27
+#define g 14
+#define dp 12
 
 
 
 // DEFINE VARIABLES FOR TWO LEDs AND TWO BUTTONs. LED_A, LED_B, BTN_A , BTN_B
 #define LED_A 4
-/* Complete all others */
-
+#define LED_B 5
+#define BTN_A 13
 
 
 // MQTT CLIENT CONFIG  
@@ -92,14 +98,28 @@ uint8_t number = 0;
 
 
 void setup() {
-  Serial.begin(115200);  // INIT SERIAL  
+  // put your setup code here, to run once:
+  Serial.begin(115200);
 
-  // CONFIGURE THE ARDUINO PINS OF THE 7SEG AS OUTPUT
+  //CONFIGURE THE ARDUINO PINS OF THE 7SEG AS OUTPUT
   pinMode(a,OUTPUT);
-  /* Configure all others here */
+  pinMode(b,OUTPUT);
+  pinMode(c,OUTPUT);
+  pinMode(d,OUTPUT);
+  pinMode(e,OUTPUT);
+  pinMode(f,OUTPUT);
+  pinMode(g,OUTPUT);
+  pinMode(dp,OUTPUT);
+  //CONFIGURE THE ARDUINO PINS OF THE LEDs AND BUTTON
+  pinMode(LED_A,OUTPUT);
+  pinMode(LED_B,OUTPUT);
+  pinMode(BTN_A,INPUT_PULLUP);
 
-  initialize();           // INIT WIFI, MQTT & NTP 
-  // vButtonCheckFunction(); // UNCOMMENT IF USING BUTTONS THEN ADD LOGIC FOR INTERFACING WITH BUTTONS IN THE vButtonCheck FUNCTION
+  //DISPLAY 8 ON STARTUP
+  Display(8);
+
+  initialize(); //INIT WIFI, MQRR & NTP
+  vButtonCheckFunction(); 
 
 }
   
@@ -107,7 +127,7 @@ void setup() {
 
 void loop() {
     // put your main code here, to run repeatedly: 
-    
+    client.loop();
 }
 
 
@@ -121,6 +141,9 @@ void vButtonCheck( void * pvParameters )  {
     configASSERT( ( ( uint32_t ) pvParameters ) == 1 );     
       
     for( ;; ) {
+      if(digitalRead(BTN_A)==LOW){
+      //delay(200);
+      GDP();
         // Add code here to check if a button(S) is pressed
         // then execute appropriate function if a button is pressed  
 
@@ -138,7 +161,7 @@ void vUpdate( void * pvParameters )  {
           char message[1100]  = {0};
 
           // Add key:value pairs to JSon object
-          doc["id"]         = "620012345";
+          doc["id"]         = "620169500";
 
           serializeJson(doc, message);  // Seralize / Covert JSon object to JSon string and store in char* array
 
@@ -181,6 +204,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print("deserializeJson() failed: ");
     Serial.println(error.c_str());
     return;
+
   }
 
 
@@ -193,8 +217,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
     if(strcmp(led, "LED A") == 0){
       /*Add code to toggle LED A with appropriate function*/
+      toggleLED(LED_A);
     }
     if(strcmp(led, "LED B") == 0){
+      toggleLED(LED_B);
       /*Add code to toggle LED B with appropriate function*/
     }
 
@@ -204,8 +230,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
     // Add key:value pairs to Json object according to below schema
     // ‘{"id": "student_id", "timestamp": 1702212234, "number": 9, "ledA": 0, "ledB": 0}’
-    doc["id"]         = "ID"; // Change to your student ID number
+    doc["id"]         = "620169500"; // Change to your student ID number
     doc["timestamp"]  = getTimeStamp();
+    doc["number"] = number;
+    doc["ledA"] = getLEDStatus(LED_A);
+    doc["ledB"] = getLEDStatus(LED_B);
     /*Add code here to insert all other variabes that are missing from Json object
     according to schema above
     */
@@ -237,19 +266,44 @@ bool publish(const char *topic, const char *payload){
 
 void Display(unsigned char number){
   /* This function takes an integer between 0 and 9 as input. This integer must be written to the 7-Segment display */
-  
+  const uint8_t digits[10][7]={
+    {0,0,0,0,0,0,1}, // 0
+    {1,0,0,1,1,1,1}, // 1
+    {0,0,1,0,0,1,0}, // 2
+    {0,0,0,0,1,1,0}, // 3
+    {1,0,0,1,1,0,0}, // 4
+    {0,1,0,0,1,0,0}, // 5
+    {0,1,0,0,0,0,0}, // 6
+    {0,0,0,1,1,1,1}, // 7
+    {0,0,0,0,0,0,0}, // 8
+    {0,0,0,0,1,0,0}  // 9
+  };
+  if (number>9) return;
+
+  digitalWrite(a, digits[number][0]);
+  digitalWrite(b, digits[number][1]);
+  digitalWrite(c, digits[number][2]);
+  digitalWrite(d, digits[number][3]);
+  digitalWrite(e, digits[number][4]);
+  digitalWrite(f, digits[number][5]);
+  digitalWrite(g, digits[number][6]);
+
+  }
 }
 
 int8_t getLEDStatus(int8_t LED) {
   // RETURNS THE STATE OF A SPECIFIC LED. 0 = LOW, 1 = HIGH  
+  return digitalRead(LED);
 }
 
 void setLEDState(int8_t LED, int8_t state){
   // SETS THE STATE OF A SPECIFIC LED   
+  digitalWrite(LED,state);
 }
 
 void toggleLED(int8_t LED){
-  // TOGGLES THE STATE OF SPECIFIC LED   
+  // TOGGLES THE STATE OF SPECIFIC LED
+  digitalWrite(LED, !digitalRead(LED);)   
 }
 
 void GDP(void){
@@ -260,9 +314,18 @@ void GDP(void){
      this integer to number variable below
   */
    number = 0 ;
+   int number= random(0,10);
 
   // DISPLAY integer on 7Seg. by 
   /* Add code here to calling appropriate function that will display integer to 7-Seg*/
+  Display(number);
+  //CAPTURE CURRENT STATES FOR THE JSON
+  int8_t ledAState= getLEDStatus(LED_A);
+  int8_t ledBState= getLEDStatus(LED_B);
+
+  //TOGGLE LEDs as FEEDBACK
+  toggleLED(LED_A);
+  toggleLED(LED_B);
 
   // PUBLISH number to topic.
   JsonDocument doc; // Create JSon object
@@ -270,8 +333,11 @@ void GDP(void){
 
   // Add key:value pairs to Json object according to below schema
   // ‘{"id": "student_id", "timestamp": 1702212234, "number": 9, "ledA": 0, "ledB": 0}’
-  doc["id"]         = "ID"; // Change to your student ID number
+  doc["id"]         = "620169500"; // Change to your student ID number
   doc["timestamp"]  = getTimeStamp();
+  doc["number"] = number;
+  doc["ledA"] = ledAState;
+  doc["ledB"] = ledBState;
   /*Add code here to insert all other variabes that are missing from Json object
   according to schema above
   */
