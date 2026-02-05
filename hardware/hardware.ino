@@ -39,9 +39,9 @@
 #define dp 12
 
 // DEFINE VARIABLES FOR TWO LEDs AND TWO BUTTONs. LED_A, LED_B, BTN_A , BTN_B
-#define LED_A 21
-#define LED_B 19
-#define BTN_A 4
+#define LED_A 4
+#define LED_B 5
+#define BTN_A 13
 
 
 // MQTT CLIENT CONFIG  
